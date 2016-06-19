@@ -7,7 +7,11 @@ output:
   keep_md : True
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 
+## Practical Machine Learning Training
 
 
 ## Background
@@ -92,7 +96,7 @@ After we have clearn the dataset, we will begin to decide which is the best mode
 
 Using confusionmatrix to test the decision tree prediction model
 
-```{r,echo=TRUE}
+```{r,echo=TRUE,cache=TRUE}
 modFitA1 <- rpart(classe ~ ., data=myTraining, method="class")
 rpart.plot(modFitA1, main="Classification Tree", extra=102, under=TRUE, faclen=0)
 predictionsA1 <- predict(modFitA1, myTesting, type = "class")
