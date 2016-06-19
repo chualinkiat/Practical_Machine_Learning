@@ -1,0 +1,143 @@
+---
+title: "Practical Machine Learning Training"
+author: "Chua Lin Kiat"
+date: "June 19, 2016"
+output: 
+  html_document:
+  keep_md : True
+---
+
+
+
+
+## Background
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+## What you should submit
+
+The goal of your project is to predict the manner in which they did the exercise. This is the "classe" variable in the training set. You may use any of the other variables to predict with. You should create a report describing how you built your model, how you used cross validation, what you think the expected out of sample error is, and why you made the choices you did. You will also use your prediction model to predict 20 different test cases.
+
+## Data Processing
+
+Load the csv file pml-training.csv and pml-testing.csv into R 
+
+```{r,echo=TRUE}
+training <- read.csv("pml-training.csv", na.strings=c("NA","#DIV/0!",""))
+testing <- read.csv("pml-testing.csv", na.strings=c("NA","#DIV/0!",""))
+```
+
+Load necessary library
+
+```{r,echo=TRUE,results='hide'}
+
+library(caret)
+library(rpart)
+library(rpart.plot)
+library(RColorBrewer)
+library(randomForest)
+library(e1071)
+```
+
+# Cross-validation
+
+Cross-validation will be performed by subsampling our training data set into 2 subsamples: subTraining data (60% of the original Training data set) and subTesting data (40%). The models will be fitted on the subTraining data set, and tested on the subTesting data. Once the most accurate model is choosen, it will be tested on the original Testing data set.
+
+# Subsampling the data
+
+Partioning  data set into two data sets, 60% for myTraining, 40% for myTesting:
+
+```{r,echo=TRUE}
+inTrain <- createDataPartition( y=training$classe , p=0.6, list=FALSE)
+myTraining <- training[inTrain, ]; myTesting <- training[-inTrain, ]
+dim(myTraining)
+dim(myTesting)
+```
+
+# Cleaning the training data set
+
+Steps to clean the dataset:-
+
+1.Remove the first 7 columns because do not want it to interfere with the algorithm
+
+```{r,echo=TRUE}
+myTraining <- myTraining[,-c(1:7)]
+myTesting <- myTesting[,-c(1:7)]
+```
+
+2.Remove columns with many null or zero values
+
+```{r,echo=TRUE}
+
+myTraining <- myTraining[,colSums(is.na(myTraining)) == 0]
+
+myTesting <- myTesting[,colSums(is.na(myTesting)) == 0]
+
+```
+
+Lets see the dimension of the 2 dataset
+
+```{r,echo=TRUE}
+dim(myTraining)
+dim(myTesting)
+
+```
+
+# Deciding the best prediction model
+
+After we have clearn the dataset, we will begin to decide which is the best model. We will investigate the 2 prediction model which is decision tree and random forests
+
+1. accuracy of decision tree prediction
+---------------------------------------
+
+Using confusionmatrix to test the decision tree prediction model
+
+```{r,echo=TRUE}
+modFitA1 <- rpart(classe ~ ., data=myTraining, method="class")
+rpart.plot(modFitA1, main="Classification Tree", extra=102, under=TRUE, faclen=0)
+predictionsA1 <- predict(modFitA1, myTesting, type = "class")
+confusionMatrix(predictionsA1, myTesting$classe)
+```
+
+Decision tree accuracy = 0.7369
+
+2. accuracy of random forests prediction
+---------------------------------------
+
+Using confusionmatrix to test the random forests prediction model
+
+```{r,echo=TRUE}
+modFitB1 <- randomForest(classe ~. , data=myTraining)
+predictionsB1 <- predict(modFitB1, myTesting, type = "class")
+confusionMatrix(predictionsB1, myTesting$classe)
+```
+
+Random forests accuracy = 0.9935
+
+Conclusion: The random forests model is more accurate as it provide an accuracy nearly 100% while decision tree gives a worse accuracy.
+
+# Submission
+
+Generate the submission file based on random forests prediction
+
+
+```{r,echo=TRUE}
+predictionsB2 <- predict(modFitB1, testing, type = "class")
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+
+pml_write_files(predictionsB2)
+
+
+
+```
+
+
+#---------------------------------------------------------
+
+
